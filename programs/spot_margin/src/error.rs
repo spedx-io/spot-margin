@@ -9,4 +9,6 @@ pub enum ErrorCode {
     UnableToLoadAccountLoader,
     #[msg("Unable to convert u128 to u64 due to an underflow or an overflow")]
     BigNumberConversionError,
+    #[msg("Unable to cast datatype")]
+    CastingFailure
 }
