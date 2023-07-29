@@ -10,5 +10,7 @@ pub enum ErrorCode {
     #[msg("Unable to convert u128 to u64 due to an underflow or an overflow")]
     BigNumberConversionError,
     #[msg("Unable to cast datatype")]
-    CastingFailure
+    CastingFailure,
+    #[msg("Math Error: Unable to perform operation")]
+    MathError
 }
