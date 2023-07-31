@@ -36,3 +36,19 @@ impl Default for SpotFulfillmentType {
         SpotFulfillmentType::PhoenixV1
     }
 }
+
+#[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq)]
+pub enum OracleType {
+    Pyth,
+    Switchboard,
+    QuoteAsset,
+    Pyth1K,
+    Pyth1M,
+    PythStables
+}
+
+impl Default for OracleType {
+    fn default() -> Self {
+        OracleType::Pyth
+    }
+}
