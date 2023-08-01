@@ -12,5 +12,7 @@ pub enum ErrorCode {
     #[msg("Unable to cast datatype")]
     CastingFailure,
     #[msg("Math Error: Unable to perform operation")]
-    MathError
+    MathError,
+    #[msg("Oracle is Invalid")]
+    InvalidOracle
 }

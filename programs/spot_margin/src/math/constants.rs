@@ -163,3 +163,6 @@ pub const DEFAULT_QUOTE_ASSET_AMOUNT_TICK_SIZE: u64 =
 
 // Withdraws
 pub const SPOT_MARKET_TOKEN_TWAP_WINDOW: i64 = TWENTY_FOUR_HOUR;
+
+// Oracle staleness
+pub const STALENESS_THRESHOLD: u64 = 60;
