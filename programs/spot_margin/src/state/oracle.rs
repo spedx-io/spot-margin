@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+// use switchboard_v2::AggregatorAccountData;
 
 use crate::{
     error::{SpedXSpotResult, ErrorCode},
@@ -271,3 +272,40 @@ pub fn get_oracle_price(
         })
     }
 }
+
+// pub fn get_switchboard_price(
+//     price_oracle: &AccountInfo,
+//     clock_slot: u64
+// ) -> SpedXSpotResult<OraclePriceData> {
+//     let aggregator_data = AggregatorAccountData::new(price_oracle).or(Err(ErrorCode::UnableToLoadOracle))?;
+
+//     let price = convert_switchboard_decimal(aggregator_data.latest_confirmed_round.result).unwrap();
+
+//     let confidence = 
+//         convert_switchboard_decimal(aggregator_data.latest_confirmed_round.std_deviation).unwrap();
+
+//     let confidence = if confidence < 0 {
+//         u64::MAX
+//     } else {
+//         price_10bps = price.unsigned_abs().safe_div(1000).unwrap();
+//         max(confidence.unsigned_abs(), price_10bps)
+//     };
+
+//     let delay = clock_slot.cast::<i64>()?.safe_sub(
+//         aggregator_data
+//             .latest_confirmed_round
+//             .round_open_slot
+//             .cast()?
+//     )?;
+
+//     let has_sufficient_data_points = aggregator_data.latest_confirmed_round.num_success >= aggregator_data.min_oracle_results;
+//     let ema = &PRICE_PRECISION_I64;
+
+//     Ok(OraclePriceData {
+//         price,
+//         confidence,
+//         delay,
+//         has_sufficient_data_points,
+//         ema
+//     })
+// }

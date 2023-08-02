@@ -14,5 +14,7 @@ pub enum ErrorCode {
     #[msg("Math Error: Unable to perform operation")]
     MathError,
     #[msg("Oracle is Invalid")]
-    InvalidOracle
+    InvalidOracle,
+    #[msg("Unable to Load Oracle")]
+    UnableToLoadOracle
 }
