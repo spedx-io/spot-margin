@@ -16,5 +16,9 @@ pub enum ErrorCode {
     #[msg("Oracle is Invalid")]
     InvalidOracle,
     #[msg("Unable to Load Oracle")]
-    UnableToLoadOracle
+    UnableToLoadOracle,
+    #[msg("Cannot update pool balance type")]
+    CannotUpdatePoolBalanceType,
+    #[msg("Insurance Fund has not been introduced yet")]
+    InsuranceFundNotIntroduced,
 }
