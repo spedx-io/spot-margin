@@ -63,7 +63,8 @@ pub struct State {
     /// Time-in-force configuration of a market order
     pub default_market_order_time_in_force: u8,
 
-    /// Spot exchange status
+    /// Spot exchange status. We have state for exchange status, but here represent it in u8 bytes as 
+    /// BitFlags returns the underlying value in bytes(u8 type)
     pub exchange_status: u8,
 
     /// Duration of a liquidation process
@@ -76,7 +77,32 @@ pub struct State {
 
 }
 
-impl State {}
+impl State {
+    /// Returns the exchange status by converting it from u8 bits to readable format
+    pub fn get_exchange_status(&self) -> SpedXSpotResult<BitFlags<ExchangeStatus>> {
+        BitFlags::<ExchangeStatus>::from_bits(usize::from(self.exchange_status)).safe_unwrap()
+    }
+
+    pub fn deposits_paused(&self) -> SpedXSpotResult<bool> {
+        Ok(self.get_exchange_status()?.contains(ExchangeStatus::DepositsPaused))
+    }
+
+    pub fn withdraws_paused(&self) -> SpedXSpotResult<bool> {
+        Ok(self.get_exchange_status()?.contains(ExchangeStatus::WithdrawsPaused))
+    }
+
+    pub fn fills_paused(&self) -> SpedXSpotResult<bool> {
+        Ok(self.get_exchange_status()?.contains(ExchangeStatus::FillsPaused))
+    }
+
+    pub fn liquidations_paused(&self) -> SpedXSpotResult<bool> {
+        Ok(self.get_exchange_status()?.contains(ExchangeStatus::LiquidationsPaused))
+    }
+
+    pub fn settlement_of_pnl_paused(&self) -> SpedXSpotResult<bool> {
+        Ok(self.get_exchange_status()?.contains(ExchangeStatus::SettlementOfPnLPause))
+    }
+}
 
 impl Size for State {
     const SIZE: usize = 992;
