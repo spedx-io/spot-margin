@@ -21,4 +21,6 @@ pub enum ErrorCode {
     CannotUpdatePoolBalanceType,
     #[msg("Insurance Fund has not been introduced yet")]
     InsuranceFundNotIntroduced,
+    #[msg("Unable to Unwrap")]
+    UnwrapError
 }

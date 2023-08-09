@@ -34,3 +34,9 @@ pub trait SpotBalance {
     /// Update balance type from deposits to borrows or vice versa
     fn update_balance_type(&mut self, balance_type: SpotBalanceType) -> SpedXSpotResult;
 }
+
+// pub trait SafeUnwrap {
+//     type Item;
+
+//     fn safe_unwrap(self) -> SpedXSpotResult<Self::Item>;
+// }
