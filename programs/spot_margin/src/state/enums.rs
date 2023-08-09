@@ -1,7 +1,9 @@
+// use core::num::bignum::Big32x40;
 use std::fmt::{
     Display,
     Formatter
 };
+use enumflags2::BitFlags;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
@@ -139,3 +141,21 @@ impl Default for AssetTier {
         AssetTier::Unlisted
     }
 }
+
+#[derive(BitFlags, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ExchangeStatus {
+    DepositsPaused = 0b00000001,
+    WithdrawsPaused = 0b00000010,
+    FillsPaused = 0b00000100,
+    LiquidationsPaused = 0b00001000,
+    SettlementOfPnLPause = 0b00010000
+}
+
+impl ExchangeStatus {
+    /// Returns an ExchangeStatus type by creating an empty BitFlags value and returning the underlying value
+    /// in u8 bytes 
+    pub fn active() -> u8 {
+        BitFlags::<ExchangeStatus>::empty().bits() as u8
+    }
+}
+
