@@ -75,9 +75,12 @@ pub struct Market {
     /// Most of our markets will be denominated in USDC, with the exception of a few denominated in LSTs.
     pub revenue_pool: PoolBalance,
 
-    /// Represents the total amount of fees collected by the protocol in the underlying market's quote currency. 
+    /// Represents the total amount of fees collected by the protocol from swaps between markets.
     /// Ultimately, it is settled to the market's revenue pool. 
     pub spot_fee_pool: PoolBalance,
+
+    /// The market's PnL pool. 
+    pub pnl_pool: PoolBalance,
 
     // pub insurance_fund: InsuranceFund,
 
@@ -249,6 +252,44 @@ pub struct Market {
     /// Fees received from swaps
     /// precision: token mint
     pub total_swap_fee: u64,
+
+    /// The maximum pnl imbalance before unrealized positive pnl asset weights are discounted
+    /// PnL imbalance refers to the skew of longs PnL over shorts or vice versa. The protocol typically
+    /// and stochastically aims for 0 imbalance, i.e the protocol and it's traders are market neutral. 
+    /// precision: QUOTE_PRECISION
+    pub unrealized_pnl_max_imbalance: u64,
+
+    // pub insurance_claim: InsuranceClaim,
+
+    /// The price at which the positions will be settled if and when the market expires
+    /// precision: PRICE_PRECISION
+    pub expiry_price: i64,
+
+    /// The imf factor for unrealized PnL. Used to discount asset weight for large positive PnL 
+    /// precision: MARGIN_PRECISION
+    pub unrealized_pnl_imf: u32,
+
+    /// The minimum margin ratio which is required to open a position.
+    /// At 0.1, 10% of the position value must be collateralized.
+    /// precision: MARGIN_PRECISION
+    pub min_margin_ratio_initial: u32,
+
+    /// The minimum margin ratio which is required to maintain a position.
+    /// At 0.05, 5% of the total collateral must be held in the account.
+    /// If the account balance dips below this ratio, they are open for liquidation
+    pub min_margin_ratio_maintenance: u32,
+
+    /// The initial asset weights for Unrealized PnL. 
+    /// precision: SPOT_WEIGHT_PRECISION
+    pub unrealized_pnl_initial_asset_weight: u32,
+
+    /// The maintenance asset weights for Unrealized PnL.
+    pub unrealized_pnl_maintenance_asset_weight: u32,
+
+    /// Number of users having an open position
+    pub number_of_users: u32,
+
+    // pub contract_tier: ContractTier,
     
     pub padding: [u8; 56],
 }
@@ -347,7 +388,16 @@ impl Default for Market {
             flash_loan_amount: 0,
             flash_loan_initial_token_amount: 0,
             total_swap_fee: 0,
-            padding: [0;56]
+            padding: [0;56],
+            pnl_pool: PoolBalance::default(),
+            unrealized_pnl_max_imbalance: 0,
+            expiry_price: 0,
+            unrealized_pnl_imf: 0,
+            min_margin_ratio_initial: 0,
+            min_margin_ratio_maintenance: 0,
+            unrealized_pnl_initial_asset_weight: 0,
+            unrealized_pnl_maintenance_asset_weight: 0,
+            number_of_users: 0
         }
     }
 }
