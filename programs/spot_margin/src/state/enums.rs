@@ -159,3 +159,30 @@ impl ExchangeStatus {
     }
 }
 
+/// Different outcomes of oracle validity. Ranging from descending order of severity or invalidity.
+/// Invalid represents that the extreme state of invalidity whereas Valid represents the extreme state of validity.
+#[derive(Clone, Copy, BorshDeserialize, BorshSerialize, PartialEq, Debug, Eq)]
+pub enum OracleValidity {
+    Invalid,
+    Volatile,
+    Uncertain,
+    StaleForMargin,
+    InsufficientDataPoints,
+    Valid,
+}
+
+impl Default for OracleValidity {
+    fn default() -> Self {
+        OracleValidity::Valid
+    }
+}
+
+#[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq)]
+pub enum Actions {
+    PnLSettlement,
+    OrderAdded,
+    FillOrder,
+    Liquidate,
+    MarginCalculation,
+    UpdateTWAP,
+}

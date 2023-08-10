@@ -22,5 +22,13 @@ pub enum ErrorCode {
     #[msg("Insurance Fund has not been introduced yet")]
     InsuranceFundNotIntroduced,
     #[msg("Unable to Unwrap")]
-    UnwrapError
+    UnwrapError,
+    #[msg("Invalid Oracle: Price is Negative/Non-Positive")]
+    OracleNegativeError,
+    #[msg("Oracle price is too volatile")]
+    OracleTooVolatile,
+    #[msg("Oracle confidence is too wide than supported limits")]
+    OracleConfidenceTooWide,
+    #[msg("Oracle price is stale for margin")]
+    OraclePriceStaleForMargin,
 }
