@@ -23,7 +23,8 @@ use crate::{
         oracle::OraclePriceData,
         market::Market,
         enums::SpotBalanceType
-    }
+    }, 
+    validate
 };
 
 pub struct InterestAccumulated {
@@ -283,4 +284,71 @@ pub fn calculate_accumulated_interest(
             borrows_interest: borrow_interest
         }
     )
+}
+
+/// Function to get value of a given amount of tokens using oracle pricing.
+/// The lower value of the oracle pricing and its twap is used to price that amount.
+pub fn get_strict_value(
+    amount: i128,
+    decimals: u32,
+    oracle_price_data: &OraclePriceData,
+    oracle_price_twap: i64
+) -> SpedXSpotResult<i128> {
+    if amount == 0 {
+        return Ok(0)
+    }
+
+    let precision_downtick = 10i128.pow(decimals);
+
+    validate!(
+        oracle_price_twap > 0 && oracle_price_data.price > 0,
+        ErrorCode::InvalidOracle,
+        "oracle price data = {:?} && oracle price twap = {}",
+        oracle_price_data,
+        oracle_price_twap
+    )?;
+
+    let price = if amount > 0 {
+        if oracle_price_data.price < oracle_price_twap {
+            oracle_price_data.price
+        } else {
+            oracle_price_twap
+        }
+    } else {
+        if oracle_price_data.price > oracle_price_twap {
+            oracle_price_data.price
+        } else {
+            oracle_price_twap
+        }
+    };
+
+    let token_value = amount.safe_mul(price.cast()?)?;
+
+    if token_value < 0 {
+        token_value.safe_floor_div(precision_downtick)
+    } else {
+        token_value.safe_div(precision_downtick)
+    }
+}
+
+/// Function to get value of a given amount of tokens using oracle pricing.
+/// Only the oracle pricing is used to price the amount
+pub fn get_token_value(
+    amount: i128,
+    decimals: u32,
+    oracle_price: i64
+) -> SpedXSpotResult<i128> {
+    if amount == 0 {
+        return Ok(0);
+    }
+
+    let precision_downtick = 10i128.pow(decimals);
+
+    let token_value_using_oracle = amount.safe_mul(oracle_price.cast()?)?;
+
+    if token_value_using_oracle < 0 {
+        token_value_using_oracle.safe_floor_div(precision_downtick.abs())
+    } else {
+        token_value_using_oracle.safe_div(precision_downtick)
+    }
 }
