@@ -31,4 +31,6 @@ pub enum ErrorCode {
     OracleConfidenceTooWide,
     #[msg("Oracle price is stale for margin")]
     OraclePriceStaleForMargin,
+    #[msg("Unable to cast unix timestamps")]
+    UnableToCastUnixTimestamp,
 }
