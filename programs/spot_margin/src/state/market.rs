@@ -22,7 +22,7 @@ use crate::{
             SPOT_CUMULATIVE_INTEREST_PRECISION
         },
         safe_math::SafeMath,
-        spot_balance::calculate_utilization
+        balance::calculate_utilization
     },
     state::{
         oracle::{

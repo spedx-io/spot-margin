@@ -4,6 +4,6 @@ pub mod safe_math;
 pub mod ceil_div;
 pub mod floor_div;
 pub mod constants;
-pub mod spot_balance;
+pub mod balance;
 pub mod safe_unwrap;
 pub mod oracle_validity;
