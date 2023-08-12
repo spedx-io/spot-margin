@@ -28,7 +28,7 @@ macro_rules! validate {
             let error_code: ErrorCode = $err;
             msg!("Error {} thrown at {}:{}", error_code, file!(), line!());
             msg!($($arg)*);
-            Err(error_code);
+            Err(error_code) 
         }
     }};
 }
