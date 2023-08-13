@@ -7,6 +7,8 @@ use enumflags2::BitFlags;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
+// use super::traits::Size
+
 /// Enums for Position Directions(Longs and Shorts)
 #[derive(Clone, Copy, BorshDeserialize, BorshSerialize, PartialEq, Debug, Eq)]
 pub enum PositionDirection {
@@ -185,4 +187,24 @@ pub enum Actions {
     Liquidate,
     MarginCalculation,
     UpdateTWAP,
+}
+
+#[derive(Clone, Copy, Debug, BorshSerialize, BorshDeserialize, PartialEq, Eq)]
+pub enum UserStatus {
+    Active,
+    Liquidatable,
+    BeingLiquidated,
+    Bankrupt,
+    ReduceOnly,
+    Passive
+}
+
+impl Default for UserStatus {
+    fn default() -> Self {
+        UserStatus::Active
+    }
+}
+
+impl super::traits::Size for UserStatus {
+    const SIZE: usize = 4376;
 }
