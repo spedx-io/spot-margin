@@ -32,3 +32,27 @@ macro_rules! validate {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! safe_increement {
+    ($value:expr, $struct:expr) => {{
+        $struct = $struct.checked_add($value).ok_or_else(ErrorCode::SafeIncrementError)?;
+    }};
+}
+
+#[macro_export]
+macro_rules! safe_decrement {
+    ($value:expr, $struct:expr) => {{
+        $struct = $struct.checked_sub($value).ok_or_else(ErrorCode::SafeDecrementError)?;
+    }};
+}
+
+#[macro_export]
+macro_rules! update_struct_id {
+    ($struct:expr, $property:ident) => {{
+        let curr_id = $struct.$property;
+
+        $struct.$property = curr_id.checked_add(1).or(Some(1).unwrap());
+        curr_id
+    }};
+}

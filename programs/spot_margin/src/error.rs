@@ -33,4 +33,8 @@ pub enum ErrorCode {
     OraclePriceStaleForMargin,
     #[msg("Unable to cast unix timestamps")]
     UnableToCastUnixTimestamp,
+    #[msg("Unable to increment value safely")]
+    SafeIncrementError,
+    #[msg("Unable to decrement value safely")]
+    SafeDecrementError,
 }
