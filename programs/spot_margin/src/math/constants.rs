@@ -136,6 +136,9 @@ pub const MAX_MARK_TWAP_DIVERGENCE: u128 = 500_000; // exponent = -3
 pub const MAX_MARGIN_RATIO: u32 = MARGIN_PRECISION as u32; // 1x or no leverage
 pub const MIN_MARGIN_RATIO: u32 = MARGIN_PRECISION as u32 /50; // max leverage, 50x leverage
 
+// Refers to the minimum margin requirement for opening a position
+pub const OPEN_ORDER_MARGIN_REQUIREMENT: u128 = QUOTE_PRECISION/100;
+
 // Refers to the maximum positive upnl supported for calculation of the initial margin. Higher the upnl, lower the
 // initial margin. as we do not want traders using these paper/temporary profits to use more leverage. the maximum aspect
 // refers to the maximum upnl that the formula of calculation of initial margin can take.
