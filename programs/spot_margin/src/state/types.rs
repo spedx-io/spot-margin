@@ -1,3 +1,1 @@
-use super::user_position::Position;
-
-pub type SpotMarginPositions = [Position;8];
+pub type SpotMarginPositions = [super::user_position::Position;8];
