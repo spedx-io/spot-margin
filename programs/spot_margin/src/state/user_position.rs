@@ -144,22 +144,31 @@ impl SpotBalance for Position {
 }
 
 impl Position {
+    /// Returns true if the user's balance for a market is 0 or he has no open orders
     pub fn is_empty(&self) -> bool {
         self.scaled_balance == 0 && self.num_open_orders == 0
     }
 
+    /// Returns true if the user has open orders in a market
     pub fn has_open_orders(&self) -> bool {
         self.num_open_orders > 0 || self.open_bids > 0 || self.open_asks > 0
     }
 
+    /// Returns true if the user has an active position
     pub fn has_open_position(&self) -> bool {
         self.base_asset_amount != 0
     }
 
+    /// Returns true if the user has unsettled PnL. Unsettled PnL is PnL that has been realized, but not settled.
+    /// Meaning that the user has closed his position, but has not yet received(or settled) the PnL yet. This can be true
+    /// if the base asset amount is zero and the quote asset amount is greater than zero, meaning that the user has closed
+    /// his position and has received the quote asset amount as PnL. 
     pub fn has_settled_pnl(&self) -> bool {
         self.base_asset_amount == 0 && self.quote_asset_amount >0
     }
 
+    /// Returns true if the user has two-way orders enabled. It will allow users to simultaneously open long and short
+    /// positions on the same base asset. This is useful for more advanced risk management for professional userbases.
     pub fn are_two_way_orders_enabled(&self) -> bool {
         self.two_way_orders_enabled == true
     }
@@ -170,10 +179,12 @@ impl Position {
         self.num_open_orders.cast::<u128>()?.safe_mul(OPEN_ORDER_MARGIN_REQUIREMENT)
     }
 
+    /// Returns the amount of tokens in balance for a market, along with the type of balance
     pub fn get_token_amount(&self, market: &Market) -> SpedXSpotResult<u128> {
         get_amount_of_tokens(self.scaled_balance.cast()?, market, &self.bal_type) // &self.bal_type is a reference to the enum
     }
 
+    /// Returns signed values of token balance amounts. We specifically return a i128 type
     pub fn get_token_amount_signed(&self, market: &Market) -> SpedXSpotResult<i128> {
         get_amount_signed(
             get_amount_of_tokens(self.scaled_balance.cast()?, market, &self.bal_type)?,
@@ -181,6 +192,7 @@ impl Position {
         )
     }
 
+    /// Returns worst-case value of the token balance amount in signed [i128;2] form
     pub fn get_token_amount_unstrict(
         &self,
         market: &Market,
@@ -188,6 +200,8 @@ impl Position {
         twap_5min: Option<i64>,
         amount: Option<i128>
     ) -> SpedXSpotResult<[i128;2]> {
+        // If we have a value for the amount, we use that as the amount. If we don't have a value for the amount, we use the
+        // get_token_amount_signed fn to calculate the amount
         let amount = match amount {
             Some(amount) => amount,
             None => self.get_token_amount_signed(market)?,
@@ -197,11 +211,17 @@ impl Position {
 
         let amount_after_all_asks_get_filled = amount.safe_add(self.open_asks.cast()?)?;
 
+        // If we have a value for the 5 minute TWAP, we use the maximum value of the TWAP and the oracle price as the oracle price.
+        // If we don't have a value for the 5 minute TWAP, we just use oracle price as the oracle price.
         let oracle_price = match twap_5min {
             Some(twap_5min) => twap_5min.max(oracle_price_data.price),
             None => oracle_price_data.price
         };
 
+        // The logic here might be confusing, so here's some explanation.
+        // If the balance amount after all bid orders have been filled is greater than the balance amount after all ask orders have been filled,
+        // use the get_token_value function passing in the parameter of -self.open_bids. We are passing in a negative value because we are calculating
+        // token value for a scenario where all bids have been filled. The same logic applies for the ask orders.
         if amount_after_all_bids_get_filled.abs() > amount_after_all_asks_get_filled.abs() {
             let order_value_unstrict = get_token_value(-self.open_bids as i128, market.decimals, oracle_price)?;
             Ok([amount_after_all_bids_get_filled, order_value_unstrict])
@@ -231,6 +251,8 @@ impl Position {
     //     }
     // }
 
+    /// Function to get the direction of the position. If base asset amount is greater than 0, it indicates a long position, and vice versa.
+    /// If the position is of two-way type, it must have a corresponding opposite position, hence the base asset amount is 0.
     pub fn get_position_direction(&self) -> PositionDirection {
         if self.two_way_orders_enabled == true {
             if self.base_asset_amount > 0 {
@@ -249,6 +271,10 @@ impl Position {
         }
     }
 
+
+    /// Function to get the direction to close the position. If base asset amount is greater than 0, it indicates a short to close, and vice versa.
+    /// If the position is of two-way type, the opposite is also a two-way type, as assignments of long and short directions to orders
+    /// are flipped, to again return a two-way type
     pub fn get_opposite_direction(&self) -> PositionDirection {
         if self.two_way_orders_enabled == true {
             if self.base_asset_amount > 0 {
@@ -267,6 +293,9 @@ impl Position {
         }
     }
 
+    /// Function to get cost schedule of a position. Cost schedule refers to the cost of opening a position. This also includes fees,
+    /// hence we use the `quote_asset_amount` field. The formula is (-quote_asset_amount/base_asset_amount). For example, if a user has spent
+    /// $30,000 to buy 1BTC, his cost schedule would be -$30,000. However, if he has sold 1BTC for $30,000, his cost schedule would be $30,000(-(-30,000)). 
     pub fn get_position_cost_schedule(&self) -> SpedXSpotResult<i128> {
         if self.base_asset_amount == 0 {
             return Ok(0);
