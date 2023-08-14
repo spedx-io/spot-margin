@@ -34,7 +34,7 @@ macro_rules! validate {
 }
 
 #[macro_export]
-macro_rules! safe_increement {
+macro_rules! safe_increment {
     ($value:expr, $struct:expr) => {{
         $struct = $struct.checked_add($value).ok_or_else(ErrorCode::SafeIncrementError)?;
     }};
