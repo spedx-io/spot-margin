@@ -210,3 +210,9 @@ impl Default for UserStatus {
 impl super::traits::Size for UserStatus {
     const SIZE: usize = 4376;
 }
+
+#[derive(Clone, Copy, Debug, BorshSerialize, BorshDeserialize, PartialEq, Eq)]
+pub enum AssetClass {
+    BaseAsset,
+    QuoteAsset
+}
