@@ -14,6 +14,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 pub enum PositionDirection {
     Long,
     Short,
+    TwoWay
 }
 
 /// Default position for PositionDirection
@@ -30,6 +31,7 @@ impl PositionDirection {
         match self {
             PositionDirection::Long => PositionDirection::Short,
             PositionDirection::Short => PositionDirection::Long,
+            PositionDirection::TwoWay => PositionDirection::TwoWay
         }
     }
 }
