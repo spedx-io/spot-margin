@@ -146,6 +146,7 @@ impl Default for AssetTier {
     }
 }
 
+/// Enum returning the current status of SpedX
 #[derive(BitFlags, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ExchangeStatus {
     DepositsPaused = 0b00000001,
@@ -181,6 +182,7 @@ impl Default for OracleValidity {
     }
 }
 
+/// Enum representing different actions(both client and server-side) on the protocol
 #[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq)]
 pub enum Actions {
     PnLSettlement,
@@ -191,6 +193,7 @@ pub enum Actions {
     UpdateTWAP,
 }
 
+/// Enum representing the current user status, with descending order of severity
 #[derive(Clone, Copy, Debug, BorshSerialize, BorshDeserialize, PartialEq, Eq)]
 pub enum UserStatus {
     Active,
@@ -211,8 +214,52 @@ impl super::traits::Size for UserStatus {
     const SIZE: usize = 4376;
 }
 
+/// The asset class we would be referring to in a specific context, either the base or quote asset of a market
 #[derive(Clone, Copy, Debug, BorshSerialize, BorshDeserialize, PartialEq, Eq)]
 pub enum AssetClass {
     BaseAsset,
     QuoteAsset
+}
+
+/// Current status of an order
+#[derive(Clone, Copy, BorshDeserialize, BorshSerialize, PartialEq, Eq, Debug)]
+pub enum OrderStatus {
+    NotInitialized,
+    Active,
+    Filled,
+    Cancelled
+}
+
+/// Different order types
+#[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug)]
+pub enum OrderType {
+    ImmediateOrCancel,
+    Limit,
+    PostOnly,
+    TriggerMarket, // Stop Loss, Take Profit
+    TriggerLimit, // Stop Loss Limit, Take Profit Limit
+    OraclePegged
+}
+
+impl Default for OrderType {
+    fn default() -> Self {
+        OrderType::Limit
+    }
+}
+
+/// Returns whether a Trigger should be triggered above(take-profit) or below(stop-loss) a certain price. 
+/// If it's already triggered, return TriggeredAbove for orders triggered above the limit price, and TriggeredBelow for orders triggered below the limit price
+#[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug)]
+pub enum OrderTriggerConditions {
+    Above,
+    Below,
+    TriggeredAbove,
+    TriggeredBelow
+}
+
+/// Default value for OrderTriggerConditions is Above(take-profit)
+impl Default for OrderTriggerConditions {
+    fn default() -> Self {
+        OrderTriggerConditions::Above
+    }
 }
