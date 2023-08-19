@@ -1,12 +1,21 @@
 use anchor_lang::zero_copy;
 use borsh::{BorshDeserialize, BorshSerialize};
 
+use crate::error::{SpedXSpotResult, ErrorCode};
+use crate::math::{
+    casting::Cast,
+    safe_math::SafeMath,
+    price::standardize_price
+};
+
 use super::enums::{
     PositionDirection,
     OrderType,
     OrderStatus,
     OrderTriggerConditions
 };
+use solana_program::msg;
+use std::panic::Location; 
 
 #[zero_copy]
 #[repr(C)]
@@ -107,4 +116,64 @@ pub struct Order {
     pub trigger_conditions: OrderTriggerConditions,
 
     pub padding: [u8;3],
+}
+
+impl Order {
+    pub fn does_order_have_oracle_price_offset(&self) -> bool {
+        self.oracle_limit_spread !=0
+    }
+
+    pub fn get_limit_price(
+        &self,
+        last_acceptable_oracle_price: Option<i64>,
+        fallback_price: Option<u64>,
+        tick_size: u64
+    ) -> SpedXSpotResult<Option<u64>> {
+        let price = if self.does_order_have_oracle_price_offset() {
+            let oracle_price = last_acceptable_oracle_price.ok_or_else(|| {
+                msg!("Oracle not found, hence unable to calculate spread");
+                ErrorCode::OracleNotFound
+            })?;
+
+            let limit_price = oracle_price.safe_add(self.oracle_limit_spread.cast()?)?;
+
+            if limit_price <= 0 {
+                msg!("Limit price cannot be equal to or lesser than zero: {}", limit_price);
+                return Err(ErrorCode::InvalidOracleSpreadLimitPrice)
+            }
+
+            Some(
+                standardize_price(limit_price.cast::<u64>()?, tick_size, self.new_position_direction)?
+            )
+        } else if self.price == 0 {
+            match fallback_price {
+                Some(price) => Some(standardize_price(price, tick_size, self.new_position_direction)?),
+                None => None
+            }
+        } else {
+            Some(self.price)
+        };
+
+        Ok(price)
+    }
+
+    pub fn force_get_limit_price(
+        &self,
+        last_acceptable_oracle_price: Option<i64>, 
+        fallback_price: Option<u64>,
+        tick_size: u64
+    ) -> SpedXSpotResult<u64> {
+        match self.get_limit_price(last_acceptable_oracle_price, fallback_price, tick_size)? {
+            Some(limit_price) => Ok(limit_price),
+            None => {
+                let caller = Location::caller();
+                msg!(
+                    "Error while fetching limit price at {}:{}",
+                    caller.file(),
+                    caller.line()
+                );
+                Err(ErrorCode::UnableToGetLimitPrice)
+            }
+        }
+    } 
 }
