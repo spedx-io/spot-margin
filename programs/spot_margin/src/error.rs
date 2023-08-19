@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+// use solana_program::msg;
 
 pub type SpedXSpotResult<T = ()> = std::result::Result<T, ErrorCode>;
 
@@ -37,4 +38,21 @@ pub enum ErrorCode {
     SafeIncrementError,
     #[msg("Unable to decrement value safely")]
     SafeDecrementError,
+    #[msg("Unable to use specified oracle")]
+    OracleNotFound,
+    #[msg("The spread between the oracle and the limit price for oracle offset limit orders has driven down the price to 0")]
+    InvalidOracleSpreadLimitPrice,
+    #[msg("Unable to fetch limit price")]
+    UnableToGetLimitPrice
 }
+
+// #[macro_export]
+// macro_rules! math_error {
+//     () => {{
+//         || {
+//             let error_code = $crate::error::ErrorCode::MathError;
+//             msg!("Error {} thrown at {}:{}", error_code, file!(), line!());
+//             error_code
+//         }
+//     }};
+// }
