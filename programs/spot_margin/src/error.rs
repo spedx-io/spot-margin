@@ -43,7 +43,9 @@ pub enum ErrorCode {
     #[msg("The spread between the oracle and the limit price for oracle offset limit orders has driven down the price to 0")]
     InvalidOracleSpreadLimitPrice,
     #[msg("Unable to fetch limit price")]
-    UnableToGetLimitPrice
+    UnableToGetLimitPrice,
+    #[msg("IOC Order has been cancelled as Number of Base Lots required to be filled have not been filled")]
+    IOCOrderCancelledDueToNumBaseLotsNotFilled
 }
 
 // #[macro_export]
