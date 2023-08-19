@@ -263,3 +263,17 @@ impl Default for OrderTriggerConditions {
         OrderTriggerConditions::Above
     }
 }
+
+#[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug)]
+pub enum PostOnlyTypes {
+    NotPostOnly, // order is not post-only
+    MustBePostOnly, // order must be post-only, tx fails if it is not
+    CanBePostOnly, // order can be post-only, tx succeeds but order fails
+    PostOnlySlide // order is post-only and if it matches against existing orders, price is adjusted to not match
+}
+
+impl Default for PostOnlyTypes {
+    fn default() -> Self {
+        PostOnlyTypes::NotPostOnly
+    }
+}
