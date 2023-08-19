@@ -5,7 +5,10 @@ use crate::error::{SpedXSpotResult, ErrorCode};
 use crate::math::{
     casting::Cast,
     safe_math::SafeMath,
-    price::standardize_price
+    price::{
+        standardize_price,
+        standardize_base_asset_amt
+    }
 };
 
 use super::enums::{
@@ -89,9 +92,9 @@ pub struct Order {
     /// If TwoWay is selected, simultaneously an order is placed on the opposite side of the book
     pub existing_position_direction: PositionDirection,
 
-    /// Whether the user want's to go long or short when opening a new position.
+    /// Whether the user wants to long or short.
     /// If TwoWay is selected, simultaneously an order is placed on the opposite side of the book
-    pub new_position_direction: PositionDirection,
+    pub pos_direction: PositionDirection,
 
     /// Whether an incoming new order is allowed to reduce size of an existing position. 
     /// Allows for reducing exposure for positions. TwoWay are NEVER reduce-only. As their main intention is to profit off of
@@ -116,6 +119,36 @@ pub struct Order {
     pub trigger_conditions: OrderTriggerConditions,
 
     pub padding: [u8;3],
+}
+
+impl Default for Order {
+    fn default() -> Self {
+        Order {
+            order_status: OrderStatus::NotInitialized,
+            order_type: OrderType::Limit,
+            slot: 0,
+            order_id: 0,
+            user_order_id: 0,
+            price: 0,
+            existing_position_direction: PositionDirection::Long,
+            base_asset_amount: 0,
+            base_asset_filled: 0,
+            quote_asset_filled: 0,
+            pos_direction: PositionDirection::Long,
+            reduce_only: false,
+            post_only: false,
+            immediate_or_cancel: false,
+            price_for_trigger_orders: 0,
+            trigger_conditions: OrderTriggerConditions::Above,
+            oracle_limit_spread: 0,
+            fail_silently_on_insufficient_funds_error: true,
+            treat_ioc_as_market: true,
+            fill_or_kill: false,
+            time_in_force: 0,
+            market_index: 0,
+            padding: [0;3]
+        }
+    }
 }
 
 impl Order {
@@ -143,11 +176,11 @@ impl Order {
             }
 
             Some(
-                standardize_price(limit_price.cast::<u64>()?, tick_size, self.new_position_direction)?
+                standardize_price(limit_price.cast::<u64>()?, tick_size, self.pos_direction)?
             )
         } else if self.price == 0 {
             match fallback_price {
-                Some(price) => Some(standardize_price(price, tick_size, self.new_position_direction)?),
+                Some(price) => Some(standardize_price(price, tick_size, self.pos_direction)?),
                 None => None
             }
         } else {
@@ -175,5 +208,160 @@ impl Order {
                 Err(ErrorCode::UnableToGetLimitPrice)
             }
         }
-    } 
+    }
+
+    pub fn does_order_have_limit_price(
+        &self,
+    ) -> SpedXSpotResult<bool> {
+        Ok(self.price > 0 ||
+            self.does_order_have_oracle_price_offset())
+    }
+
+    pub fn get_unfilled_base_amount(
+        &self,
+        existing_position: Option<i64>,
+        num_lots_to_fill: u64,
+    ) -> SpedXSpotResult<u64> {
+
+        let unfilled_base_amt = self.base_asset_amount.safe_sub(self.base_asset_filled)?;
+
+        let existing_position = match existing_position { 
+            Some(existing_position) => existing_position,
+            None => {
+                return Ok(unfilled_base_amt)
+            }
+        };
+
+        if !self.reduce_only || self.post_only {
+            return Ok(unfilled_base_amt);
+        }
+
+        if existing_position == 0 {
+            return Ok(0)
+        }
+
+        if self.fill_or_kill {
+            return Ok(0)
+        }
+
+        if self.immediate_or_cancel {
+            if self.base_asset_filled < num_lots_to_fill {
+                return Err(ErrorCode::IOCOrderCancelledDueToNumBaseLotsNotFilled);
+            } else if self.base_asset_filled > num_lots_to_fill {
+                return Ok(num_lots_to_fill)
+            } else {
+                return Ok(num_lots_to_fill)
+            }
+        }
+
+        match self.pos_direction {
+            PositionDirection::Long => {
+                if existing_position > 0 {
+                    Ok(0)
+                } else {
+                    Ok(unfilled_base_amt.min(existing_position.unsigned_abs()))
+                }
+            },
+            PositionDirection::Short => {
+                if existing_position < 0 {
+                    Ok(0)
+                } else {
+                    Ok(unfilled_base_amt.min(existing_position.unsigned_abs()))
+                }
+            },
+            PositionDirection::TwoWay => {
+                if existing_position > 0 {
+                    Ok(unfilled_base_amt.min(existing_position.unsigned_abs()))
+                } else if existing_position < 0 {
+                    Ok(unfilled_base_amt.min(existing_position.unsigned_abs()))
+                } else {
+                    Ok(0)
+                }
+            }
+        }
+    }
+
+    pub fn get_standardized_base_amount_unfilled(
+        &self,
+        existing_position: Option<i64>,
+        num_base_lots_to_fill: u64,
+        order_step_size: u64,
+    ) -> SpedXSpotResult<u64> {
+        standardize_base_asset_amt(
+            self.get_unfilled_base_amount(existing_position, num_base_lots_to_fill)?,
+            order_step_size
+        )
+    }
+
+    pub fn order_has_trigger(&self) -> bool {
+        matches!(
+            self.order_type,
+            OrderType::TriggerMarket | OrderType::TriggerLimit
+        )
+    }
+
+    pub fn has_trigger_order_triggered(&self) -> bool {
+        matches!(
+            self.trigger_conditions,
+            OrderTriggerConditions::TriggeredAbove | OrderTriggerConditions::TriggeredBelow
+        )
+    }
+
+    pub fn order_has_trigger_above(&self) -> bool {
+        matches!(
+            self.trigger_conditions,
+            OrderTriggerConditions::Above | OrderTriggerConditions::TriggeredAbove
+        )
+    }
+
+    pub fn order_has_trigger_below(&self) -> bool {
+        matches!(
+            self.trigger_conditions,
+            OrderTriggerConditions::Below | OrderTriggerConditions::TriggeredBelow
+        )
+    }
+
+    pub fn order_has_triggered_above(&self) -> bool {
+        matches!(
+            self.trigger_conditions,
+            OrderTriggerConditions::TriggeredAbove
+        )
+    }
+
+    pub fn order_has_triggered_below(&self) -> bool {
+        matches!(
+            self.trigger_conditions,
+            OrderTriggerConditions::TriggeredBelow
+        )
+    }
+
+    pub fn is_order_open(&self, market_index: u16) -> bool {
+        self.market_index == market_index && self.order_status == OrderStatus::Active
+    }
+
+    pub fn is_order_ioc(&self, min_num_lots_to_fill: u64) -> bool {
+        self.base_asset_filled >= min_num_lots_to_fill
+    }
+
+    pub fn is_order_fok(&self, min_num_lots_to_fill: u64) -> bool {
+        self.base_asset_amount == min_num_lots_to_fill
+    }
+
+    pub fn is_market_order(&self) -> bool {
+        matches!(
+            self.order_type,
+            OrderType::TriggerMarket | OrderType::ImmediateOrCancel | OrderType::OraclePegged
+        ) && self.immediate_or_cancel
+    }
+
+    pub fn is_limit_order(&self) -> bool {
+        matches!(
+            self.order_type,
+            OrderType::Limit | OrderType::TriggerLimit
+        )
+    }
+
+    pub fn is_resting_limit_order(&self) -> bool {
+        self.is_limit_order() && self.post_only
+    }
 }
