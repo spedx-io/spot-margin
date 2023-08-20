@@ -1,20 +1,12 @@
 //! Functions for representing a user's position in spot markets.
 
 use crate::{
-    error::{
-        SpedXSpotResult,
-        ErrorCode
-    },
+    error::SpedXSpotResult,
     math::{
         casting::Cast,
         constants::{
-            EPOCH_DURATION,
             OPEN_ORDER_MARGIN_REQUIREMENT,
             PRICE_PRECISION_I128,
-            QUOTE_PRECISION_U64,
-            QUOTE_PRECISION,
-            QUOTE_SPOT_MARKET_INDEX,
-            THIRTY_DAY
         },
         safe_math::SafeMath,
         balance::{
@@ -22,30 +14,19 @@ use crate::{
             get_token_value,
             get_amount_of_tokens
         },
-        rolling_sum::calculate_rolling_sum, oracle_validity
     },
     state::{
         oracle::OraclePriceData,
         market::Market,
-        traits::{
-            SpotBalance,
-            Size
-        },
+        traits::SpotBalance,
         enums::{
             SpotBalanceType,
             PositionDirection
         }
     },
-    safe_increment,
-    update_struct_id,
 
 };
 use anchor_lang::prelude::*;
-use solana_program::msg;
-use std::{
-    cmp::max,
-    panic::Location
-};
 
 // use super::enums::PositionDirection;
 

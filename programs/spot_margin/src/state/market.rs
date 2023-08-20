@@ -1,28 +1,9 @@
-use std::{
-    fmt,
-    fmt::{
-        Display,
-        Formatter
-    }, ffi::NulError,
-};
-
 use anchor_lang::prelude::*;
 
 use crate::{
     error::{
         SpedXSpotResult,
         ErrorCode
-    },
-    math::{
-        casting::Cast,
-        constants::{
-            MARGIN_PRECISION,
-            SPOT_BALANCE_PRECISION_U64,
-            PRICE_PRECISION_I64,
-            SPOT_CUMULATIVE_INTEREST_PRECISION
-        },
-        safe_math::SafeMath,
-        balance::calculate_utilization
     },
     state::{
         oracle::{
@@ -40,7 +21,6 @@ use crate::{
             SpotBalance
         }
     },
-    validate
 };
 
 
