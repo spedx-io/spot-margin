@@ -47,14 +47,3 @@ pub enum ErrorCode {
     #[msg("IOC Order has been cancelled as Number of Base Lots required to be filled have not been filled")]
     IOCOrderCancelledDueToNumBaseLotsNotFilled
 }
-
-// #[macro_export]
-// macro_rules! math_error {
-//     () => {{
-//         || {
-//             let error_code = $crate::error::ErrorCode::MathError;
-//             msg!("Error {} thrown at {}:{}", error_code, file!(), line!());
-//             error_code
-//         }
-//     }};
-// }
