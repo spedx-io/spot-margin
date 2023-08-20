@@ -28,8 +28,6 @@ use crate::{
 };
 use anchor_lang::prelude::*;
 
-// use super::enums::PositionDirection;
-
 /// Represents a user's position in a corresponding spot market. Contains details such as 
 /// - user balance
 /// - base asset value
@@ -211,26 +209,6 @@ impl Position {
             Ok([amount_after_all_asks_get_filled, order_value_unstrict])
         }
     }
-
-    // pub fn get_position_direction(&self) -> PositionDirection {
-    //     if self.base_asset_amount > 0 {
-    //         PositionDirection::Long
-    //     } else if self.base_asset_amount < 0 {
-    //         PositionDirection::Short
-    //     } else {
-    //         PositionDirection::TwoWay
-    //     }
-    // }
-
-    // pub fn get_direction_to_close_position(&self) -> PositionDirection {
-    //     if self.base_asset_amount >0 {
-    //         PositionDirection::Short
-    //     } else if self.base_asset_amount < 0 {
-    //         PositionDirection::Long
-    //     } else {
-    //         PositionDirection::TwoWay
-    //     }
-    // }
 
     /// Function to get the direction of the position. If base asset amount is greater than 0, it indicates a long position, and vice versa.
     /// If the position is of two-way type, it must have a corresponding opposite position, hence the base asset amount is 0.

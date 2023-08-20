@@ -382,7 +382,6 @@ impl Default for Market {
     }
 }
 
-/// Pre-allocated size of spot market
 impl Size for Market {
     const SIZE: usize = 776;
 }

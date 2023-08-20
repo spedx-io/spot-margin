@@ -96,7 +96,6 @@ pub struct HistoricalIndexData {
 }
 
 impl HistoricalIndexData {
-    /// Default implementation of HistoricalIndexData where values are represented by quote values in PRICE_PRECISION.
     pub fn default_quote_oracle() -> Self { 
         HistoricalIndexData {
             last_index_ask_price: PRICE_PRECISION_U64,

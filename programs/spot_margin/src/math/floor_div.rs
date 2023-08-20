@@ -14,10 +14,8 @@ macro_rules! checked_impl {
             #[track_caller]
             #[inline]
             fn checked_floor_div(&self, rhs: $t) -> Option<$t> {
-                // we divide &self with rhs, using the checked_div function in rust. If there is any underflow, overflow
-                // or division by 0, a None value is returned instead of the function panicking. 
-                // What is underflow? Underflow refers to a situation wherein a value obtained after an operations is
-                // lesser than the minimum acceptable value for the datatype. Overflow is the opposite of underflow.
+                // we use the checked_div function in rust to perform the divison.
+                // this is more efficient while handling errors during underflow or overflow
                 let quotient = self.checked_div(rhs)?;
 
                 // Finds the remainder of diving self with rhs

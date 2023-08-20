@@ -15,12 +15,11 @@ pub trait CheckedCeilDiv: Sized {
 macro_rules! checked_impl {
     ($t:ty) => {
         impl CheckedCeilDiv for $t {
-            // we perform
             #[track_caller]
             #[inline]
             fn checked_ceil_div(&self, rhs: $t) -> Option<$t> {
-                // we divide &self with rhs, using the checked_div function in rust. If underflow, overflow or division by 
-                // 0 happens, a None value is returned
+                // we use the checked_div function in rust to perform the divison.
+                // this is more efficient while handling errors during underflow or overflow
                 let quotient = self.checked_div(rhs)?;
 
                 // finds the remainder of dividing self with the rhs

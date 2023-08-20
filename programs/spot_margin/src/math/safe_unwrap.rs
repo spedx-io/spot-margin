@@ -1,10 +1,7 @@
-use crate::{
-    error::{
+use crate::error::{
         SpedXSpotResult,
         ErrorCode
-    },
-    // state::traits::SafeUnwrap
-};
+    };
 use solana_program::msg;
 use std::panic::Location;
 

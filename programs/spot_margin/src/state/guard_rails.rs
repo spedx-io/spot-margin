@@ -1,3 +1,5 @@
+//! Protocol guard rails for the oracle and the margining system.
+
 use anchor_lang::prelude::*;
 
 use crate::math::constants::PERCENTAGE_PRECISION_U64;

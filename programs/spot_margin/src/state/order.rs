@@ -24,7 +24,6 @@ use std::panic::Location;
 #[repr(C)]
 #[derive(BorshDeserialize, BorshSerialize, PartialEq, Debug, Eq)]
 pub struct Order {
-    /// The slot in which the order was placed
     pub slot: u64,
 
     /// The price at which a (Limit) order was placed. Price is not relevant for Market orders. 
@@ -82,8 +81,6 @@ pub struct Order {
     /// Current status of an order. 
     /// Can be NotInitialized, Active(Open), Filled and Cancelled
     pub order_status: OrderStatus,
-
-    // pub market_type: MarketType
 
     /// Client-generated order ID. This field can be used to place orders/block orders + cancel orders/block orders
     pub user_order_id: u8,

@@ -35,8 +35,7 @@ pub trait SafeMath: Sized {
 macro_rules! checked_impl {
     ($t:ty) => {
         impl SafeMath for $t {
-            /// Implemehting safe_add for type $t. We add self to $t, and if a result is obtained, we return it.
-            /// We add both the variables using the checked_add function in rust.
+            /// Implemehting safe_add for type $t. 
             #[track_caller]
             #[inline(always)]
             fn safe_add(self, v: $t) -> SpedXSpotResult<$t> {
@@ -52,8 +51,7 @@ macro_rules! checked_impl {
                 }
             }
 
-            /// Implementing safe_sub for type $t. We subtract $t from self, and if a result is obtained, we return it.
-            /// We subtract the variables using the checked_sub function in rust.
+            /// Implementing safe_sub for type $t.
             #[track_caller]
             #[inline(always)]
             fn safe_sub(self, v: $t) -> SpedXSpotResult<$t> {
@@ -69,8 +67,7 @@ macro_rules! checked_impl {
                 }
             }
 
-            /// Implementing safe_div for type $t. We multiply self by $t, and if a result is obtained, we return it.
-            /// We multiply the variables using the checked_div function in rust.
+            /// Implementing safe_mul for type $t. 
             #[track_caller]
             #[inline(always)]
             fn safe_mul(self, v: $t) -> SpedXSpotResult<$t> {
@@ -86,8 +83,7 @@ macro_rules! checked_impl {
                 }
             }
 
-            /// Implementing safe_div for type $t. We divide self by $t, and if a result is obtained, we return it.
-            /// We divide the variables using the checked_div function in rust.
+            /// Implementing safe_div for type $t.
             #[track_caller]
             #[inline(always)]
             fn safe_div(self, v: $t) -> SpedXSpotResult<$t> {
@@ -103,8 +99,7 @@ macro_rules! checked_impl {
                 }
             }
 
-            /// Implementing safe_ceil_div for type $t. We divide self by $t, and if a result is obtained, we return it.
-            /// We divide the variables using the checked_ceil_div function in rust.
+            /// Implementing safe_ceil_div for type $t. 
             #[track_caller]
             #[inline(always)]
             fn safe_ceil_div(self, v: $t) -> SpedXSpotResult<$t> {
@@ -145,8 +140,7 @@ macro_rules! div_floor_impl {
     ($t:ty) => {
         impl SafeFloorDiv for $t {
 
-            /// Implementing safe_floor_div for type $t. We divide self by $t, and if a result is obtained, we return it.
-            /// We divide the variables using the checked_floor_div function in rust.
+            /// Implementing safe_floor_div for type $t. 
             #[track_caller]
             #[inline(always)]
             fn safe_floor_div(self, v: $t) -> SpedXSpotResult<$t> {

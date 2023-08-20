@@ -36,10 +36,6 @@ use crate::{
     }
 };
 
-// use super::constants::BID_ASK_SPREAD_PRECISION_I128;
-
-// use super::constants::{PERCENTAGE_PRECISION, PERCENTAGE_PRECISION_U64};
-
 /// Function to check if the oracle data is valid for a specific action in the protocol
 /// Such as filling an order, adding an order, etc.
 pub fn is_oracle_valid_for_action(
