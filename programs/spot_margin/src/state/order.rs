@@ -362,6 +362,6 @@ impl Order {
     }
 
     pub fn is_resting_limit_order(&self) -> bool {
-        self.is_limit_order() && self.post_only
+        self.is_limit_order() && self.post_only && !self.fill_or_kill && !self.immediate_or_cancel
     }
 }
