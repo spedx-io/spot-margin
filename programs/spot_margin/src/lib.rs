@@ -4,7 +4,7 @@ pub mod macros;
 pub mod error;
 pub mod math;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("AKiHde3YE4KWPPPYbHSP8nbKcZ37DVQUrfgfAsFXziwv");
 
 #[program]
 pub mod spot_margin {
@@ -25,7 +25,7 @@ pub mod spot_margin {
 pub struct Initialize<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
-
+/// CHECK: Checked in instruction creation
     pub phnx_market: UncheckedAccount<'info>,
 
     pub program: Program<'info, System>
