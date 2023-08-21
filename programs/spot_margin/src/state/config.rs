@@ -7,7 +7,8 @@ use crate::{
     state::{
         traits::Size,
         enums::ExchangeStatus,
-        guard_rails::OracleGuardRails
+        guard_rails::OracleGuardRails,
+        oracle::HistoricalPriceData
     }
 };
 
@@ -31,6 +32,8 @@ pub struct State {
     // pub spot_fee_structure: FeeStructure,
 
     pub oracle_guard_rails: OracleGuardRails,
+
+    pub historical_price_data: HistoricalPriceData,
 
     /// Number of authorities for a market
     pub number_of_authorities: u64,

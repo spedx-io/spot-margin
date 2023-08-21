@@ -7,8 +7,6 @@ use enumflags2::BitFlags;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 
-// use super::traits::Size
-
 /// Enums for Position Directions(Longs and Shorts)
 #[derive(Clone, Copy, BorshDeserialize, BorshSerialize, PartialEq, Debug, Eq)]
 pub enum PositionDirection {
@@ -275,5 +273,21 @@ pub enum PostOnlyTypes {
 impl Default for PostOnlyTypes {
     fn default() -> Self {
         PostOnlyTypes::NotPostOnly
+    }
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub enum PriceType {
+    Unknown,
+    Price,
+    Twap,
+    Liquidity,
+    Confidence
+}
+
+impl Default for PriceType {
+    fn default() -> Self {
+        PriceType::Price
     }
 }

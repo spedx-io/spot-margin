@@ -1,5 +1,9 @@
+#![allow(unused_imports)]
+
 use anchor_lang::prelude::*;
+use bytemuck::{cast_slice_mut, checked::{try_cast_slice_mut, from_bytes_mut}, Pod, Zeroable};
 // use switchboard_v2::AggregatorAccountData;
+use std::{cell::RefMut, str::FromStr};
 
 use crate::{
     error::{SpedXSpotResult, ErrorCode},
@@ -14,8 +18,25 @@ use crate::{
         },
         safe_math::SafeMath
     },
-    state::enums::OracleType
+    state::{
+        enums::OracleType,
+        helpers::{
+            get_test_pyth_price,
+            get_account_bytes,
+            create_account_info
+        }
+    },
+    create_account_info
 };
+use bytes::BytesMut;
+
+pub mod pyth_program {
+    use solana_program::declare_id;
+    #[cfg(feature = "mainnet-beta")]
+    declare_id!("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH");
+    #[cfg(not(feature = "mainnet-beta"))]
+    declare_id!("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s");
+}
 
 #[derive(Default, AnchorSerialize, AnchorDeserialize, Clone, Copy, Eq, PartialEq, Debug)]
 pub struct HistoricalPriceData {
@@ -132,7 +153,7 @@ pub struct OraclePriceData {
     pub delay: i64,
     /// Whether the data aggregated has sufficient individual data points.
     pub has_sufficient_data_points: bool,
-    pub ema: i64,
+    // pub ema: i64,
 }
 
 impl OraclePriceData {
@@ -143,7 +164,7 @@ impl OraclePriceData {
             confidence: 1,
             delay: 0,
             has_sufficient_data_points: true,
-            ema: PRICE_PRECISION_I64
+            // ema: PRICE_PRECISION_I64
         }
     }
 }
@@ -202,13 +223,6 @@ pub fn get_pyth_price(
         .safe_div(oracle_scale_div)?
         .cast::<u64>()?;
 
-    // scaled oracle ema price
-    let oracle_ema_price_scaled = (curr_price_ema.price)
-        .cast::<i128>()?
-        .safe_mul(oracle_scale_mul.cast()?)?
-        .safe_div(oracle_scale_div.cast()?)?
-        .cast::<i64>()?;
-
     // fetching delay between oracle updates
     let oracle_delay = clock_slot.cast::<i64>()?.safe_sub(curr_price.publish_time.cast()?)?;
 
@@ -217,7 +231,7 @@ pub fn get_pyth_price(
         confidence: oracle_conf_scaled,
         delay: oracle_delay,
         has_sufficient_data_points: true,
-        ema: oracle_ema_price_scaled
+        // ema: oracle_ema_price_scaled
     })
 }
 
@@ -267,44 +281,145 @@ pub fn get_oracle_price(
             confidence: 1,
             delay: 0,
             has_sufficient_data_points: true,
-            ema: PRICE_PRECISION_I64
+            // ema: PRICE_PRECISION_I64
         })
     }
 }
 
-// pub fn get_switchboard_price(
-//     price_oracle: &AccountInfo,
-//     clock_slot: u64
-// ) -> SpedXSpotResult<OraclePriceData> {
-//     let aggregator_data = AggregatorAccountData::new(price_oracle).or(Err(ErrorCode::UnableToLoadOracle))?;
+#[derive(Default, Clone, Copy)]
+#[repr(C)]
+pub struct Price { 
+    pub pyth_magic_number: u32,
+    pub pyth_program_version: u32,
+    pub atype: u32,
+    pub size: u32,
+    pub price_type: crate::state::enums::PriceType,
+    pub exponent: i32,
+    pub num: u32,
+    pub curr_slot: u64,
+    pub curr_valid_slot: u64,
+    pub twap: i64,
+    pub price_vol: u64,
+    pub acc_key: PriceAccountKey,
+    pub next_acc_key: PriceAccountKey,
+    pub aggregator_pubkey: PriceAccountKey,
+    pub aggregator: PriceInfo,
+    pub details: [PriceDetails;3]
+}
 
-//     let price = convert_switchboard_decimal(aggregator_data.latest_confirmed_round.result).unwrap();
+impl Price {
+    #[inline]
+    pub fn load_prices<'a>(price_feed: &'a AccountInfo) -> std::result::Result<RefMut<'a, Price>, ProgramError> {
+        let data: RefMut<'a, [u8]> =
+            RefMut::map(price_feed.try_borrow_mut_data().unwrap(), |data| *data);
 
-//     let confidence = 
-//         convert_switchboard_decimal(aggregator_data.latest_confirmed_round.std_deviation).unwrap();
+        let state: RefMut<'a, Self> = RefMut::map(data, |f| {
+            from_bytes_mut(cast_slice_mut::<u8, u8>(try_cast_slice_mut(f).unwrap()))
+        });
+        Ok(state)
+    }
+}
 
-//     let confidence = if confidence < 0 {
-//         u64::MAX
-//     } else {
-//         price_10bps = price.unsigned_abs().safe_div(1000).unwrap();
-//         max(confidence.unsigned_abs(), price_10bps)
-//     };
+#[cfg(target_endian="little")]
+unsafe impl Pod for Price {}
 
-//     let delay = clock_slot.cast::<i64>()?.safe_sub(
-//         aggregator_data
-//             .latest_confirmed_round
-//             .round_open_slot
-//             .cast()?
-//     )?;
+#[cfg(target_endian="little")]
+unsafe impl Zeroable for Price {}
 
-//     let has_sufficient_data_points = aggregator_data.latest_confirmed_round.num_success >= aggregator_data.min_oracle_results;
-//     let ema = &PRICE_PRECISION_I64;
+#[derive(Default, Clone, Copy)]
+#[repr(C)]
+pub struct PriceAccountKey {
+    pub val: [u8;32]
+}
 
-//     Ok(OraclePriceData {
-//         price,
-//         confidence,
-//         delay,
-//         has_sufficient_data_points,
-//         ema
-//     })
-// }
+#[derive(Default, Clone, Copy)]
+#[repr(C)]
+pub struct PriceInfo {
+    pub price: i64,
+    pub conf: u64,
+    pub status: PriceStatus,
+    pub slot: u64,
+}
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub enum PriceStatus {
+    NotInitialized,
+    Tradeable,
+    Halted
+}
+
+impl Default for PriceStatus {
+    fn default() -> Self {
+        PriceStatus::Tradeable
+    }
+}
+
+#[derive(Default, Clone, Copy)]
+#[repr(C)]
+pub struct PriceDetails {
+    publisher: Pubkey,
+    aggregator: PriceAccountKey,
+    latest_price: PriceInfo,
+}
+
+/// Test to get pyth price at a multiple/precision of 1,000
+/// We use this multiple upon the oracle prices to obtain a precise oracle price
+#[test]
+fn pyth_1k() {
+    let mut oracle_price = get_test_pyth_price(8394, 10);
+    let oracle_price_key =
+        Pubkey::from_str("8ihFLu5FimgTQ1Unh4dVyEHUGodJ5gJQCrQf4KUVB9bN").unwrap();
+    let pyth_program = crate::state::oracle::pyth_program::id();
+    create_account_info!(
+        oracle_price,
+        &oracle_price_key,
+        &pyth_program,
+        oracle_account_info
+    );
+
+    let oracle_price_data =
+        get_oracle_price(&OracleType::Pyth1K, &oracle_account_info, 0).unwrap();
+    assert_eq!(oracle_price_data.price, 839);
+}
+
+/// Test to get pyth price at a multiple/precision of 1,000,000
+/// We use this multiple upon the oracle prices to obtain a precise oracle price
+#[test]
+fn pyth_1m() {
+    let mut oracle_price = get_test_pyth_price(8394, 10);
+    let oracle_price_key =
+        Pubkey::from_str("8ihFLu5FimgTQ1Unh4dVyEHUGodJ5gJQCrQf4KUVB9bN").unwrap();
+    let pyth_program = crate::state::oracle::pyth_program::id();
+    create_account_info!(
+        oracle_price,
+        &oracle_price_key,
+        &pyth_program,
+        oracle_account_info
+    );
+
+    let oracle_price_data =
+        get_oracle_price(&OracleType::Pyth1M, &oracle_account_info, 0).unwrap();
+    assert_eq!(oracle_price_data.price, 839400);
+}
+
+/// Macro that can be called to create account info using available data such as
+/// - Account Pubkey
+/// - lamports
+/// - account_bytes(which represents the account in deserialized form)
+/// - owner of the account
+#[macro_export]
+macro_rules! create_account_info {
+    ($account:expr, $owner:expr, $name: ident) => {
+        let key = Pubkey::default();
+        let mut lamports = 0;
+        let mut data = get_account_bytes(&mut $account);
+        let owner = $type::owner();
+        let $name = create_account_info(&key, true, &mut lamports, &mut data[..], $owner);
+    };
+    ($account:expr, $pubkey:expr, $owner:expr, $name: ident) => {
+        let mut lamports = 0;
+        let mut data = get_account_bytes(&mut $account);
+        let $name = create_account_info($pubkey, true, &mut lamports, &mut data[..], $owner);
+    };
+}

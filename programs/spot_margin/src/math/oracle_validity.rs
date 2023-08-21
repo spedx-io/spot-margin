@@ -1,10 +1,20 @@
-use std::cmp::max;
+#![allow(unused_imports)]
 
-// use borsh::{
-//     BorshSerialize,
-//     BorshDeserialize
-// };
-// use solana_program::msg;
+use std::cmp::max;
+use crate::{
+    state::{
+        config::State,
+        guard_rails::{
+            OracleGuardRails,
+            ValidityGuardRails,
+            PriceDivergenceGuardRails
+        },
+    },
+    math::constants::{
+        PRICE_PRECISION,
+        PRICE_PRECISION_U64
+    }
+};
 
 use crate::{
     error::{
@@ -21,16 +31,11 @@ use crate::{
         safe_math::SafeMath,
     },
     state::{
-        oracle::{OraclePriceData, HistoricalPriceData},
+        oracle::{OraclePriceData, HistoricalPriceData, get_pyth_price},
         enums::{
             MarketStatus,
             OracleValidity,
             Actions
-        },
-        guard_rails::{
-            OracleGuardRails,
-            ValidityGuardRails,
-            PriceDivergenceGuardRails
         },
         market::Market
     }
@@ -96,7 +101,7 @@ pub fn oracle_validity(
         confidence: oracle_conf,
         delay: oracle_delay,
         has_sufficient_data_points,
-        ema: _oracle_ema
+        // ema: _oracle_ema
     } = *oracle_price_data;
 
     // Checking if the oracle price can ever be -ve, if yes, the token just got rekt
@@ -231,7 +236,7 @@ pub fn get_oracle_status<'a>(
     Ok(
         OracleStatus {
             price_data: *oracle_price_data,
-            oracle_mark_spread_pct: oracle_mark_spread_pct,
+            oracle_mark_spread_pct,
             is_mark_price_too_divergent: is_oracle_mark_too_divergent,
             oracle_validity
         }
@@ -270,4 +275,86 @@ pub fn calculate_oracle_twap_5min_mark_spread_pct(
         .safe_mul(BID_ASK_SPREAD_PRECISION_I128)?
         .safe_div(price.cast::<i128>()?)?
         .cast()
+}
+
+#[test]
+fn calculate_oracle_validity() {
+    // getting oracle price data
+    let mut oracle_price_data = OraclePriceData {
+        price: (34 * PRICE_PRECISION) as i64,
+        confidence: PRICE_PRECISION_U64 / 100,
+        delay: 1,
+        has_sufficient_data_points: true,
+    };
+
+    // getting historical oracle data
+    let mut historical_oracle_data = HistoricalPriceData {
+        last_oracle_twap: (34 * PRICE_PRECISION) as i64,
+        last_oracle_twap_time_stamp: 1656682258,
+        last_oracle_twap_5min: (34 * PRICE_PRECISION) as i64,
+        ..HistoricalPriceData::default()
+    };
+
+    // getting information of the guard rails for oracle and protocol validity
+    let state = State {
+        oracle_guard_rails: OracleGuardRails {
+            price_divergence_guard_rails: PriceDivergenceGuardRails { 
+                oracle_mark_pct_divergence: 1, 
+                oracle_twap_5min_pct_divergence: 10 
+            },
+            validity: ValidityGuardRails { 
+                slots_before_stale_for_margin: 120, 
+                confidence_interval_max_accepted_divergence: 20000, 
+                max_volatility_ratio: 5
+            }
+        },
+        ..State::default()
+    };
+
+    // getting the oracle status at its current lifetime
+    let mut oracle_status = get_oracle_status(&oracle_price_data, &state.oracle_guard_rails, &state.historical_price_data, None).unwrap();
+
+    // we want to check that the oracle is valid and that the mark price is not too divergent
+    assert!(oracle_status.oracle_validity == OracleValidity::Valid);
+    assert!(!oracle_status.is_mark_price_too_divergent);
+
+    // asserting that the oracle status is valid at different values of oracle price data
+    oracle_price_data = OraclePriceData {
+        price: (34 * PRICE_PRECISION) as i64,
+        confidence: PRICE_PRECISION_U64 / 100,
+        delay: 11,
+        has_sufficient_data_points: true,
+    };
+    oracle_status = get_oracle_status(&oracle_price_data, &state.oracle_guard_rails, &state.historical_price_data, None).unwrap();
+    assert!(oracle_status.oracle_validity != OracleValidity::Valid);
+
+    // asserting that the oracle status is valid if there is a delay in oracle updates
+    oracle_price_data.delay = 8;
+    oracle_status = get_oracle_status(&oracle_price_data, &state.oracle_guard_rails, &state.historical_price_data, None).unwrap();
+    assert_eq!(oracle_status.oracle_validity, OracleValidity::Valid);
+    assert_eq!(!oracle_status.is_mark_price_too_divergent, false);
+
+    // asserting that the oracle status is valid if there is a change in the 5min TWAP
+    historical_oracle_data.last_oracle_twap_5min = 29*PRICE_PRECISION as i64;
+    oracle_status = get_oracle_status(&oracle_price_data, &state.oracle_guard_rails, &state.historical_price_data, None).unwrap();
+    assert_eq!(oracle_status.is_mark_price_too_divergent, false);
+    assert_eq!(oracle_status.oracle_validity, OracleValidity::Valid);
+
+    // asserting that the oracle status is valid with a certain confidence interval
+    oracle_price_data.confidence = PRICE_PRECISION_U64;
+    oracle_status = get_oracle_status(&oracle_price_data, &state.oracle_guard_rails, &state.historical_price_data, None).unwrap();
+    assert_eq!(oracle_status.is_mark_price_too_divergent, false);
+    assert_eq!(oracle_status.oracle_validity, OracleValidity::Volatile);
+
+    // asserting that the oracle status is valid with pre-defined values of historical oracle data
+    let price_precision = 32 * PRICE_PRECISION;
+    let previous_ts = 1656682258;
+    historical_oracle_data = HistoricalPriceData {
+        last_oracle_twap: price_precision as i64,
+        last_oracle_twap_time_stamp: previous_ts,
+        ..HistoricalPriceData::default()
+    };
+    oracle_status = get_oracle_status(&oracle_price_data, &state.oracle_guard_rails, &historical_oracle_data, None).unwrap();
+    assert_eq!(oracle_status.oracle_validity, OracleValidity::Valid);
+    assert_eq!(!oracle_status.is_mark_price_too_divergent, false);
 }
