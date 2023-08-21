@@ -169,3 +169,6 @@ pub const SPOT_MARKET_TOKEN_TWAP_WINDOW: i64 = TWENTY_FOUR_HOUR;
 
 // Oracle staleness
 pub const STALENESS_THRESHOLD: u64 = 60;
+
+/// Phoenix market discriminant
+pub const PHOENIX_MARKET_DISCRIMINANT: u64 = 8167313896524341111;

@@ -45,5 +45,9 @@ pub enum ErrorCode {
     #[msg("Unable to fetch limit price")]
     UnableToGetLimitPrice,
     #[msg("IOC Order has been cancelled as Number of Base Lots required to be filled have not been filled")]
-    IOCOrderCancelledDueToNumBaseLotsNotFilled
+    IOCOrderCancelledDueToNumBaseLotsNotFilled,
+    #[msg("Unable to load phoenix program")]
+    CannotLoadPhoenixProgram,
+    #[msg("Failed to deserialize phoenix market")]
+    FailedToDeserializePhoenixMarket
 }

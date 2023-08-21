@@ -11,11 +11,11 @@ pub mod spot_margin {
     use super::*;
 
     pub fn initialize(
-        ctx: Context<Initialize>,
-        quote_atoms_quoted: u64,
-        post_only: bool,
-        reduce_only: bool,
-        iceberg: bool
+        _ctx: Context<Initialize>,
+        _quote_atoms_quoted: u64,
+        _post_only: bool,
+        _reduce_only: bool,
+        _iceberg: bool
     ) -> Result<()> {
         Ok(())
     }
